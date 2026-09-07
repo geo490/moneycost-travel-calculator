@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Waypoint — Travel Cost Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1B2A4A;
+  --ink-soft:#3B4A6B;
+  --paper:#F7F3E9;
+  --paper-dim:#EFE9D8;
+  --brass:#B8863C;
+  --brass-dim:#D9BE8C;
+  --stamp:#A8443B;
+  --stamp-soft:#F4E3E0;
+  --line:#D8CFB8;
+  --white:#FFFDF9;
+  --ok:#2F6B4F;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--ink);font-family:'IBM Plex Sans',sans-serif;color:var(--ink);}
+.app{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;}
+h1,h2,h3,h4{font-family:'Fraunces',serif;font-weight:600;margin:0;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+
+/* ===== Header ===== */
+.header{background:var(--ink);color:var(--paper);padding:28px 32px 22px;position:relative;overflow:hidden;}
+.header::after{content:"";position:absolute;right:-40px;top:-40px;width:220px;height:220px;border:1px solid rgba(247,243,233,.12);border-radius:50%;}
+.header::before{content:"";position:absolute;right:20px;bottom:-90px;width:220px;height:220px;border:1px solid rgba(247,243,233,.08);border-radius:50%;}
+.brandrow{display:flex;align-items:baseline;justify-content:space-between;gap:20px;flex-wrap:wrap;position:relative;z-index:1;}
+.brand{display:flex;align-items:baseline;gap:12px;}
+.brand h1{font-size:30px;letter-spacing:.3px;}
+.brand .tag{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--brass-dim);}
+.homebar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px;position:relative;z-index:1;}
+.homebar select{background:rgba(247,243,233,.08);border:1px solid rgba(247,243,233,.25);color:var(--paper);padding:7px 10px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+.homebar label{color:var(--brass-dim);font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:1px;}
+
+/* ===== Nav ===== */
+.tabs{display:flex;background:var(--white);border-bottom:1px solid var(--line);overflow-x:auto;}
+.tab{padding:14px 20px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;color:var(--ink-soft);border-bottom:3px solid transparent;white-space:nowrap;}
+.tab.active{color:var(--ink);border-bottom-color:var(--brass);font-weight:600;}
+.tab .n{display:inline-block;background:var(--paper-dim);color:var(--ink-soft);border-radius:10px;padding:1px 7px;font-size:10.5px;margin-left:6px;}
+
+.view{padding:26px 32px 60px;}
+.section-title{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+.section-title h2{font-size:22px;}
+.section-sub{color:var(--ink-soft);font-size:13.5px;margin-bottom:18px;}
+
+/* ===== Cards ===== */
+.card{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:20px;margin-bottom:16px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+@media(max-width:720px){.grid2,.grid3{grid-template-columns:1fr;}}
+.field label{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-soft);margin-bottom:6px;}
+select,input[type=text],input[type=number],input[type=url],input[type=date]{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:6px;font-size:14px;font-family:'IBM Plex Sans',sans-serif;background:var(--white);color:var(--ink);}
+input:focus,select:focus{outline:2px solid var(--brass);outline-offset:1px;}
+button{cursor:pointer;font-family:'IBM Plex Sans',sans-serif;}
+.btn{background:var(--ink);color:var(--paper);border:none;padding:10px 18px;border-radius:6px;font-size:13.5px;font-weight:600;}
+.btn:hover{background:var(--ink-soft);}
+.btn.brass{background:var(--brass);color:var(--ink);}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink);}
+.btn.stamp{background:var(--stamp);color:var(--white);}
+.btn.sm{padding:6px 12px;font-size:12.5px;border-radius:5px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.pill{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;padding:3px 9px;border-radius:20px;border:1px solid var(--line);color:var(--ink-soft);}
+.pill.official{background:#E7F0EA;color:var(--ok);border-color:#BFDDC9;}
+.pill.tourism{background:#E9EFF7;color:#2C4B7C;border-color:#C7D6EC;}
+.pill.secondary{background:#FBF1DD;color:#8A6316;border-color:#EAD7A9;}
+.pill.stale{background:var(--stamp-soft);color:var(--stamp);border-color:#E4C1BC;}
+.pill.manual{background:#F0EAF4;color:#6B3E8C;border-color:#DBC9E6;}
+
+.empty{padding:40px 20px;text-align:center;color:var(--ink-soft);border:1px dashed var(--line);border-radius:10px;background:var(--white);}
+.empty h3{font-size:16px;margin-bottom:6px;}
+
+/* country/place chooser */
+.chip{display:inline-flex;align-items:center;gap:8px;background:var(--paper-dim);border:1px solid var(--line);border-radius:20px;padding:6px 12px 6px 14px;font-size:13px;margin:3px 6px 3px 0;}
+.chip button{background:none;border:none;color:var(--stamp);font-weight:700;padding:0 2px;font-size:14px;}
+.searchbox{position:relative;}
+.searchresults{position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--line);border-top:none;max-height:220px;overflow-y:auto;z-index:20;border-radius:0 0 6px 6px;box-shadow:0 8px 20px rgba(0,0,0,.08);}
+.searchresults div{padding:8px 12px;font-size:13.5px;cursor:pointer;}
+.searchresults div:hover{background:var(--paper-dim);}
+
+.place-item{border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:10px;background:var(--white);}
+.place-item .rowtop{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.item-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--paper-dim);font-size:13.5px;}
+.item-row:first-of-type{border-top:none;}
+.item-meta{color:var(--ink-soft);font-size:12px;margin-top:2px;}
+.qty-input{width:56px;padding:5px 6px;font-size:13px;}
+
+.loading-line{display:flex;align-items:center;gap:8px;color:var(--ink-soft);font-size:13px;padding:10px 0;}
+.spinner{width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--brass);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.warn-banner{background:var(--stamp-soft);border:1px solid #E4C1BC;color:#7A2E27;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;}
+.note{font-size:12px;color:var(--ink-soft);margin-top:4px;}
+
+/* boarding pass total */
+.boardingpass{background:var(--ink);color:var(--paper);border-radius:14px;padding:0;display:flex;overflow:hidden;position:relative;box-shadow:0 12px 30px rgba(27,42,74,.35);}
+.bp-main{flex:1;padding:26px 30px;}
+.bp-stub{width:200px;background:rgba(247,243,233,.06);padding:26px 22px;border-left:2px dashed rgba(247,243,233,.35);position:relative;}
+.bp-main .lbl,.bp-stub .lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--brass-dim);}
+.bp-total{font-family:'Fraunces',serif;font-size:44px;font-weight:700;margin-top:6px;}
+.bp-range{font-family:'Fraunces',serif;font-size:30px;font-weight:700;margin-top:6px;}
+.bp-sub{font-size:12.5px;color:rgba(247,243,233,.7);margin-top:6px;}
+.bp-punch{position:absolute;width:22px;height:22px;background:var(--paper);border-radius:50%;left:-13px;}
+.bp-punch.top{top:-11px;}
+.bp-punch.bot{bottom:-11px;}
+
+.cat-total-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:16px;}
+.cat-total{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:14px;}
+.cat-total .lbl{font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-soft);}
+.cat-total .amt{font-family:'Fraunces',serif;font-size:20px;margin-top:4px;}
+
+.country-block{margin-bottom:26px;}
+.country-head{display:flex;align-items:baseline;gap:10px;border-bottom:2px solid var(--ink);padding-bottom:6px;margin-bottom:10px;}
+.country-head h3{font-size:19px;}
+.country-head .amt{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:15px;}
+
+a.srclink{color:var(--brass);font-weight:600;text-decoration:none;border-bottom:1px solid var(--brass-dim);}
+a.srclink:hover{color:var(--ink);}
+
+table.srctable{width:100%;border-collapse:collapse;font-size:13px;}
+table.srctable th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);padding:8px 10px;border-bottom:2px solid var(--ink);}
+table.srctable td{padding:9px 10px;border-bottom:1px solid var(--paper-dim);vertical-align:top;}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+/* ============================= DATA ============================= */
+const COUNTRIES = [{"name": "Afghanistan", "iso2": "AF", "currency": "AFN"}, {"name": "Albania", "iso2": "AL", "currency": "ALL"}, {"name": "Algeria", "iso2": "DZ", "currency": "DZD"}, {"name": "Andorra", "iso2": "AD", "currency": "EUR"}, {"name": "Angola", "iso2": "AO", "currency": "AOA"}, {"name": "Antigua and Barbuda", "iso2": "AG", "currency": "XCD"}, {"name": "Argentina", "iso2": "AR", "currency": "ARS"}, {"name": "Armenia", "iso2": "AM", "currency": "AMD"}, {"name": "Australia", "iso2": "AU", "currency": "AUD"}, {"name": "Austria", "iso2": "AT", "currency": "EUR"}, {"name": "Azerbaijan", "iso2": "AZ", "currency": "AZN"}, {"name": "Bahamas", "iso2": "BS", "currency": "BSD"}, {"name": "Bahrain", "iso2": "BH", "currency": "BHD"}, {"name": "Bangladesh", "iso2": "BD", "currency": "BDT"}, {"name": "Barbados", "iso2": "BB", "currency": "BBD"}, {"name": "Belarus", "iso2": "BY", "currency": "BYN"}, {"name": "Belgium", "iso2": "BE", "currency": "EUR"}, {"name": "Belize", "iso2": "BZ", "currency": "BZD"}, {"name": "Benin", "iso2": "BJ", "currency": "XOF"}, {"name": "Bhutan", "iso2": "BT", "currency": "BTN"}, {"name": "Bolivia", "iso2": "BO", "currency": "BOB"}, {"name": "Bosnia and Herzegovina", "iso2": "BA", "currency": "BAM"}, {"name": "Botswana", "iso2": "BW", "currency": "BWP"}, {"name": "Brazil", "iso2": "BR", "currency": "BRL"}, {"name": "Brunei", "iso2": "BN", "currency": "BND"}, {"name": "Bulgaria", "iso2": "BG", "currency": "BGN"}, {"name": "Burkina Faso", "iso2": "BF", "currency": "XOF"}, {"name": "Burundi", "iso2": "BI", "currency": "BIF"}, {"name": "Cabo Verde", "iso2": "CV", "currency": "CVE"}, {"name": "Cambodia", "iso2": "KH", "currency": "KHR"}, {"name": "Cameroon", "iso2": "CM", "currency": "XAF"}, {"name": "Canada", "iso2": "CA", "currency": "CAD"}, {"name": "Central African Republic", "iso2": "CF", "currency": "XAF"}, {"name": "Chad", "iso2": "TD", "currency": "XAF"}, {"name": "Chile", "iso2": "CL", "currency": "CLP"}, {"name": "China", "iso2": "CN", "currency": "CNY"}, {"name": "Colombia", "iso2": "CO", "currency": "COP"}, {"name": "Comoros", "iso2": "KM", "currency": "KMF"}, {"name": "Costa Rica", "iso2": "CR", "currency": "CRC"}, {"name": "Croatia", "iso2": "HR", "currency": "EUR"}, {"name": "Cuba", "iso2": "CU", "currency": "CUP"}, {"name": "Cyprus", "iso2": "CY", "currency": "EUR"}, {"name": "Czechia", "iso2": "CZ", "currency": "CZK"}, {"name": "Democratic Republic of the Congo", "iso2": "CD", "currency": "CDF"}, {"name": "Denmark", "iso2": "DK", "currency": "DKK"}, {"name": "Djibouti", "iso2": "DJ", "currency": "DJF"}, {"name": "Dominica", "iso2": "DM", "currency": "XCD"}, {"name": "Dominican Republic", "iso2": "DO", "currency": "DOP"}, {"name": "Ecuador", "iso2": "EC", "currency": "USD"}, {"name": "Egypt", "iso2": "EG", "currency": "EGP"}, {"name": "El Salvador", "iso2": "SV", "currency": "USD"}, {"name": "Equatorial Guinea", "iso2": "GQ", "currency": "XAF"}, {"name": "Eritrea", "iso2": "ER", "currency": "ERN"}, {"name": "Estonia", "iso2": "EE", "currency": "EUR"}, {"name": "Eswatini", "iso2": "SZ", "currency": "SZL"}, {"name": "Ethiopia", "iso2": "ET", "currency": "ETB"}, {"name": "Fiji", "iso2": "FJ", "currency": "FJD"}, {"name": "Finland", "iso2": "FI", "currency": "EUR"}, {"name": "France", "iso2": "FR", "currency": "EUR"}, {"name": "Gabon", "iso2": "GA", "currency": "XAF"}, {"name": "Gambia", "iso2": "GM", "currency": "GMD"}, {"name": "Georgia", "iso2": "GE", "currency": "GEL"}, {"name": "Germany", "iso2": "DE", "currency": "EUR"}, {"name": "Ghana", "iso2": "GH", "currency": "GHS"}, {"name": "Greece", "iso2": "GR", "currency": "EUR"}, {"name": "Grenada", "iso2": "GD", "currency": "XCD"}, {"name": "Guatemala", "iso2": "GT", "currency": "GTQ"}, {"name": "Guinea", "iso2": "GN", "currency": "GNF"}, {"name": "Guinea-Bissau", "iso2": "GW", "currency": "XOF"}, {"name": "Guyana", "iso2": "GY", "currency": "GYD"}, {"name": "Haiti", "iso2": "HT", "currency": "HTG"}, {"name": "Honduras", "iso2": "HN", "currency": "HNL"}, {"name": "Hungary", "iso2": "HU", "currency": "HUF"}, {"name": "Iceland", "iso2": "IS", "currency": "ISK"}, {"name": "India", "iso2": "IN", "currency": "INR"}, {"name": "Indonesia", "iso2": "ID", "currency": "IDR"}, {"name": "Iran", "iso2": "IR", "currency": "IRR"}, {"name": "Iraq", "iso2": "IQ", "currency": "IQD"}, {"name": "Ireland", "iso2": "IE", "currency": "EUR"}, {"name": "Israel", "iso2": "IL", "currency": "ILS"}, {"name": "Italy", "iso2": "IT", "currency": "EUR"}, {"name": "Jamaica", "iso2": "JM", "currency": "JMD"}, {"name": "Japan", "iso2": "JP", "currency": "JPY"}, {"name": "Jordan", "iso2": "JO", "currency": "JOD"}, {"name": "Kazakhstan", "iso2": "KZ", "currency": "KZT"}, {"name": "Kenya", "iso2": "KE", "currency": "KES"}, {"name": "Kiribati", "iso2": "KI", "currency": "AUD"}, {"name": "Kosovo", "iso2": "XK", "currency": "EUR"}, {"name": "Kuwait", "iso2": "KW", "currency": "KWD"}, {"name": "Kyrgyzstan", "iso2": "KG", "currency": "KGS"}, {"name": "Laos", "iso2": "LA", "currency": "LAK"}, {"name": "Latvia", "iso2": "LV", "currency": "EUR"}, {"name": "Lebanon", "iso2": "LB", "currency": "LBP"}, {"name": "Lesotho", "iso2": "LS", "currency": "LSL"}, {"name": "Liberia", "iso2": "LR", "currency": "LRD"}, {"name": "Libya", "iso2": "LY", "currency": "LYD"}, {"name": "Liechtenstein", "iso2": "LI", "currency": "CHF"}, {"name": "Lithuania", "iso2": "LT", "currency": "EUR"}, {"name": "Luxembourg", "iso2": "LU", "currency": "EUR"}, {"name": "Madagascar", "iso2": "MG", "currency": "MGA"}, {"name": "Malawi", "iso2": "MW", "currency": "MWK"}, {"name": "Malaysia", "iso2": "MY", "currency": "MYR"}, {"name": "Maldives", "iso2": "MV", "currency": "MVR"}, {"name": "Mali", "iso2": "ML", "currency": "XOF"}, {"name": "Malta", "iso2": "MT", "currency": "EUR"}, {"name": "Marshall Islands", "iso2": "MH", "currency": "USD"}, {"name": "Mauritania", "iso2": "MR", "currency": "MRU"}, {"name": "Mauritius", "iso2": "MU", "currency": "MUR"}, {"name": "Mexico", "iso2": "MX", "currency": "MXN"}, {"name": "Micronesia", "iso2": "FM", "currency": "USD"}, {"name": "Moldova", "iso2": "MD", "currency": "MDL"}, {"name": "Monaco", "iso2": "MC", "currency": "EUR"}, {"name": "Mongolia", "iso2": "MN", "currency": "MNT"}, {"name": "Montenegro", "iso2": "ME", "currency": "EUR"}, {"name": "Morocco", "iso2": "MA", "currency": "MAD"}, {"name": "Mozambique", "iso2": "MZ", "currency": "MZN"}, {"name": "Myanmar", "iso2": "MM", "currency": "MMK"}, {"name": "Namibia", "iso2": "NA", "currency": "NAD"}, {"name": "Nauru", "iso2": "NR", "currency": "AUD"}, {"name": "Nepal", "iso2": "NP", "currency": "NPR"}, {"name": "Netherlands", "iso2": "NL", "currency": "EUR"}, {"name": "New Zealand", "iso2": "NZ", "currency": "NZD"}, {"name": "Nicaragua", "iso2": "NI", "currency": "NIO"}, {"name": "Niger", "iso2": "NE", "currency": "XOF"}, {"name": "Nigeria", "iso2": "NG", "currency": "NGN"}, {"name": "North Korea", "iso2": "KP", "currency": "KPW"}, {"name": "North Macedonia", "iso2": "MK", "currency": "MKD"}, {"name": "Norway", "iso2": "NO", "currency": "NOK"}, {"name": "Oman", "iso2": "OM", "currency": "OMR"}, {"name": "Pakistan", "iso2": "PK", "currency": "PKR"}, {"name": "Palau", "iso2": "PW", "currency": "USD"}, {"name": "Palestine", "iso2": "PS", "currency": "ILS"}, {"name": "Panama", "iso2": "PA", "currency": "PAB"}, {"name": "Papua New Guinea", "iso2": "PG", "currency": "PGK"}, {"name": "Paraguay", "iso2": "PY", "currency": "PYG"}, {"name": "Peru", "iso2": "PE", "currency": "PEN"}, {"name": "Philippines", "iso2": "PH", "currency": "PHP"}, {"name": "Poland", "iso2": "PL", "currency": "PLN"}, {"name": "Portugal", "iso2": "PT", "currency": "EUR"}, {"name": "Qatar", "iso2": "QA", "currency": "QAR"}, {"name": "Republic of the Congo", "iso2": "CG", "currency": "XAF"}, {"name": "Romania", "iso2": "RO", "currency": "RON"}, {"name": "Russia", "iso2": "RU", "currency": "RUB"}, {"name": "Rwanda", "iso2": "RW", "currency": "RWF"}, {"name": "Saint Kitts and Nevis", "iso2": "KN", "currency": "XCD"}, {"name": "Saint Lucia", "iso2": "LC", "currency": "XCD"}, {"name": "Saint Vincent and the Grenadines", "iso2": "VC", "currency": "XCD"}, {"name": "Samoa", "iso2": "WS", "currency": "WST"}, {"name": "San Marino", "iso2": "SM", "currency": "EUR"}, {"name": "Sao Tome and Principe", "iso2": "ST", "currency": "STN"}, {"name": "Saudi Arabia", "iso2": "SA", "currency": "SAR"}, {"name": "Senegal", "iso2": "SN", "currency": "XOF"}, {"name": "Serbia", "iso2": "RS", "currency": "RSD"}, {"name": "Seychelles", "iso2": "SC", "currency": "SCR"}, {"name": "Sierra Leone", "iso2": "SL", "currency": "SLE"}, {"name": "Singapore", "iso2": "SG", "currency": "SGD"}, {"name": "Slovakia", "iso2": "SK", "currency": "EUR"}, {"name": "Slovenia", "iso2": "SI", "currency": "EUR"}, {"name": "Solomon Islands", "iso2": "SB", "currency": "SBD"}, {"name": "Somalia", "iso2": "SO", "currency": "SOS"}, {"name": "South Africa", "iso2": "ZA", "currency": "ZAR"}, {"name": "South Korea", "iso2": "KR", "currency": "KRW"}, {"name": "South Sudan", "iso2": "SS", "currency": "SSP"}, {"name": "Spain", "iso2": "ES", "currency": "EUR"}, {"name": "Sri Lanka", "iso2": "LK", "currency": "LKR"}, {"name": "Sudan", "iso2": "SD", "currency": "SDG"}, {"name": "Suriname", "iso2": "SR", "currency": "SRD"}, {"name": "Sweden", "iso2": "SE", "currency": "SEK"}, {"name": "Switzerland", "iso2": "CH", "currency": "CHF"}, {"name": "Syria", "iso2": "SY", "currency": "SYP"}, {"name": "Taiwan", "iso2": "TW", "currency": "TWD"}, {"name": "Tajikistan", "iso2": "TJ", "currency": "TJS"}, {"name": "Tanzania", "iso2": "TZ", "currency": "TZS"}, {"name": "Thailand", "iso2": "TH", "currency": "THB"}, {"name": "Timor-Leste", "iso2": "TL", "currency": "USD"}, {"name": "Togo", "iso2": "TG", "currency": "XOF"}, {"name": "Tonga", "iso2": "TO", "currency": "TOP"}, {"name": "Trinidad and Tobago", "iso2": "TT", "currency": "TTD"}, {"name": "Tunisia", "iso2": "TN", "currency": "TND"}, {"name": "Turkey", "iso2": "TR", "currency": "TRY"}, {"name": "Turkmenistan", "iso2": "TM", "currency": "TMT"}, {"name": "Tuvalu", "iso2": "TV", "currency": "AUD"}, {"name": "Uganda", "iso2": "UG", "currency": "UGX"}, {"name": "Ukraine", "iso2": "UA", "currency": "UAH"}, {"name": "United Arab Emirates", "iso2": "AE", "currency": "AED"}, {"name": "United Kingdom", "iso2": "GB", "currency": "GBP"}, {"name": "United States", "iso2": "US", "currency": "USD"}, {"name": "Uruguay", "iso2": "UY", "currency": "UYU"}, {"name": "Uzbekistan", "iso2": "UZ", "currency": "UZS"}, {"name": "Vanuatu", "iso2": "VU", "currency": "VUV"}, {"name": "Vatican City", "iso2": "VA", "currency": "EUR"}, {"name": "Venezuela", "iso2": "VE", "currency": "VES"}, {"name": "Vietnam", "iso2": "VN", "currency": "VND"}, {"name": "Yemen", "iso2": "YE", "currency": "YER"}, {"name": "Zambia", "iso2": "ZM", "currency": "ZMW"}, {"name": "Zimbabwe", "iso2": "ZW", "currency": "ZWL"}];
+const CURRENCIES = [{"code": "AED", "name": "UAE Dirham", "symbol": "د.إ"}, {"code": "AFN", "name": "Afghan Afghani", "symbol": "؋"}, {"code": "ALL", "name": "Albanian Lek", "symbol": "L"}, {"code": "AMD", "name": "Armenian Dram", "symbol": "֏"}, {"code": "AOA", "name": "Angolan Kwanza", "symbol": "Kz"}, {"code": "ARS", "name": "Argentine Peso", "symbol": "$"}, {"code": "AUD", "name": "Australian Dollar", "symbol": "$"}, {"code": "AZN", "name": "Azerbaijani Manat", "symbol": "₼"}, {"code": "BAM", "name": "Bosnia-Herzegovina Mark", "symbol": "KM"}, {"code": "BBD", "name": "Barbadian Dollar", "symbol": "$"}, {"code": "BDT", "name": "Bangladeshi Taka", "symbol": "৳"}, {"code": "BGN", "name": "Bulgarian Lev", "symbol": "лв"}, {"code": "BHD", "name": "Bahraini Dinar", "symbol": ".د.ب"}, {"code": "BIF", "name": "Burundian Franc", "symbol": "FBu"}, {"code": "BND", "name": "Brunei Dollar", "symbol": "$"}, {"code": "BOB", "name": "Bolivian Boliviano", "symbol": "Bs."}, {"code": "BRL", "name": "Brazilian Real", "symbol": "R$"}, {"code": "BSD", "name": "Bahamian Dollar", "symbol": "$"}, {"code": "BTN", "name": "Bhutanese Ngultrum", "symbol": "Nu."}, {"code": "BWP", "name": "Botswana Pula", "symbol": "P"}, {"code": "BYN", "name": "Belarusian Ruble", "symbol": "Br"}, {"code": "BZD", "name": "Belize Dollar", "symbol": "$"}, {"code": "CAD", "name": "Canadian Dollar", "symbol": "$"}, {"code": "CDF", "name": "Congolese Franc", "symbol": "FC"}, {"code": "CHF", "name": "Swiss Franc", "symbol": "CHF"}, {"code": "CLP", "name": "Chilean Peso", "symbol": "$"}, {"code": "CNY", "name": "Chinese Yuan", "symbol": "¥"}, {"code": "COP", "name": "Colombian Peso", "symbol": "$"}, {"code": "CRC", "name": "Costa Rican Colón", "symbol": "₡"}, {"code": "CUP", "name": "Cuban Peso", "symbol": "$"}, {"code": "CVE", "name": "Cabo Verdean Escudo", "symbol": "$"}, {"code": "CZK", "name": "Czech Koruna", "symbol": "Kč"}, {"code": "DJF", "name": "Djiboutian Franc", "symbol": "Fdj"}, {"code": "DKK", "name": "Danish Krone", "symbol": "kr"}, {"code": "DOP", "name": "Dominican Peso", "symbol": "RD$"}, {"code": "DZD", "name": "Algerian Dinar", "symbol": "دج"}, {"code": "EGP", "name": "Egyptian Pound", "symbol": "£"}, {"code": "ERN", "name": "Eritrean Nakfa", "symbol": "Nfk"}, {"code": "ETB", "name": "Ethiopian Birr", "symbol": "Br"}, {"code": "EUR", "name": "Euro", "symbol": "€"}, {"code": "FJD", "name": "Fijian Dollar", "symbol": "$"}, {"code": "GBP", "name": "British Pound", "symbol": "£"}, {"code": "GEL", "name": "Georgian Lari", "symbol": "₾"}, {"code": "GHS", "name": "Ghanaian Cedi", "symbol": "₵"}, {"code": "GMD", "name": "Gambian Dalasi", "symbol": "D"}, {"code": "GNF", "name": "Guinean Franc", "symbol": "FG"}, {"code": "GTQ", "name": "Guatemalan Quetzal", "symbol": "Q"}, {"code": "GYD", "name": "Guyanese Dollar", "symbol": "$"}, {"code": "HNL", "name": "Honduran Lempira", "symbol": "L"}, {"code": "HTG", "name": "Haitian Gourde", "symbol": "G"}, {"code": "HUF", "name": "Hungarian Forint", "symbol": "Ft"}, {"code": "IDR", "name": "Indonesian Rupiah", "symbol": "Rp"}, {"code": "ILS", "name": "Israeli New Shekel", "symbol": "₪"}, {"code": "INR", "name": "Indian Rupee", "symbol": "₹"}, {"code": "IQD", "name": "Iraqi Dinar", "symbol": "ع.د"}, {"code": "IRR", "name": "Iranian Rial", "symbol": "﷼"}, {"code": "ISK", "name": "Icelandic Krona", "symbol": "kr"}, {"code": "JMD", "name": "Jamaican Dollar", "symbol": "$"}, {"code": "JOD", "name": "Jordanian Dinar", "symbol": "د.ا"}, {"code": "JPY", "name": "Japanese Yen", "symbol": "¥"}, {"code": "KES", "name": "Kenyan Shilling", "symbol": "KSh"}, {"code": "KGS", "name": "Kyrgyzstani Som", "symbol": "с"}, {"code": "KHR", "name": "Cambodian Riel", "symbol": "៛"}, {"code": "KMF", "name": "Comorian Franc", "symbol": "CF"}, {"code": "KPW", "name": "North Korean Won", "symbol": "₩"}, {"code": "KRW", "name": "South Korean Won", "symbol": "₩"}, {"code": "KWD", "name": "Kuwaiti Dinar", "symbol": "د.ك"}, {"code": "KZT", "name": "Kazakhstani Tenge", "symbol": "₸"}, {"code": "LAK", "name": "Lao Kip", "symbol": "₭"}, {"code": "LBP", "name": "Lebanese Pound", "symbol": "ل.ل"}, {"code": "LKR", "name": "Sri Lankan Rupee", "symbol": "₨"}, {"code": "LRD", "name": "Liberian Dollar", "symbol": "$"}, {"code": "LSL", "name": "Lesotho Loti", "symbol": "L"}, {"code": "LYD", "name": "Libyan Dinar", "symbol": "ل.د"}, {"code": "MAD", "name": "Moroccan Dirham", "symbol": "د.م."}, {"code": "MDL", "name": "Moldovan Leu", "symbol": "L"}, {"code": "MGA", "name": "Malagasy Ariary", "symbol": "Ar"}, {"code": "MKD", "name": "Macedonian Denar", "symbol": "ден"}, {"code": "MMK", "name": "Myanmar Kyat", "symbol": "K"}, {"code": "MNT", "name": "Mongolian Tögrög", "symbol": "₮"}, {"code": "MRU", "name": "Mauritanian Ouguiya", "symbol": "UM"}, {"code": "MUR", "name": "Mauritian Rupee", "symbol": "₨"}, {"code": "MVR", "name": "Maldivian Rufiyaa", "symbol": "Rf"}, {"code": "MWK", "name": "Malawian Kwacha", "symbol": "MK"}, {"code": "MXN", "name": "Mexican Peso", "symbol": "$"}, {"code": "MYR", "name": "Malaysian Ringgit", "symbol": "RM"}, {"code": "MZN", "name": "Mozambican Metical", "symbol": "MT"}, {"code": "NAD", "name": "Namibian Dollar", "symbol": "$"}, {"code": "NGN", "name": "Nigerian Naira", "symbol": "₦"}, {"code": "NIO", "name": "Nicaraguan Córdoba", "symbol": "C$"}, {"code": "NOK", "name": "Norwegian Krone", "symbol": "kr"}, {"code": "NPR", "name": "Nepalese Rupee", "symbol": "₨"}, {"code": "NZD", "name": "New Zealand Dollar", "symbol": "$"}, {"code": "OMR", "name": "Omani Rial", "symbol": "ر.ع."}, {"code": "PAB", "name": "Panamanian Balboa", "symbol": "B/."}, {"code": "PEN", "name": "Peruvian Sol", "symbol": "S/"}, {"code": "PGK", "name": "Papua New Guinean Kina", "symbol": "K"}, {"code": "PHP", "name": "Philippine Peso", "symbol": "₱"}, {"code": "PKR", "name": "Pakistani Rupee", "symbol": "₨"}, {"code": "PLN", "name": "Polish Zloty", "symbol": "zł"}, {"code": "PYG", "name": "Paraguayan Guaraní", "symbol": "₲"}, {"code": "QAR", "name": "Qatari Riyal", "symbol": "ر.ق"}, {"code": "RON", "name": "Romanian Leu", "symbol": "lei"}, {"code": "RSD", "name": "Serbian Dinar", "symbol": "дин"}, {"code": "RUB", "name": "Russian Ruble", "symbol": "₽"}, {"code": "RWF", "name": "Rwandan Franc", "symbol": "FRw"}, {"code": "SAR", "name": "Saudi Riyal", "symbol": "ر.س"}, {"code": "SBD", "name": "Solomon Islands Dollar", "symbol": "$"}, {"code": "SCR", "name": "Seychellois Rupee", "symbol": "₨"}, {"code": "SDG", "name": "Sudanese Pound", "symbol": "ج.س."}, {"code": "SEK", "name": "Swedish Krona", "symbol": "kr"}, {"code": "SGD", "name": "Singapore Dollar", "symbol": "$"}, {"code": "SLE", "name": "Sierra Leonean Leone", "symbol": "Le"}, {"code": "SOS", "name": "Somali Shilling", "symbol": "S"}, {"code": "SRD", "name": "Surinamese Dollar", "symbol": "$"}, {"code": "SSP", "name": "South Sudanese Pound", "symbol": "£"}, {"code": "STN", "name": "São Tomé and Príncipe Dobra", "symbol": "Db"}, {"code": "SYP", "name": "Syrian Pound", "symbol": "£"}, {"code": "SZL", "name": "Eswatini Lilangeni", "symbol": "L"}, {"code": "THB", "name": "Thai Baht", "symbol": "฿"}, {"code": "TJS", "name": "Tajikistani Somoni", "symbol": "ЅМ"}, {"code": "TMT", "name": "Turkmenistani Manat", "symbol": "m"}, {"code": "TND", "name": "Tunisian Dinar", "symbol": "د.ت"}, {"code": "TOP", "name": "Tongan Paʻanga", "symbol": "T$"}, {"code": "TRY", "name": "Turkish Lira", "symbol": "₺"}, {"code": "TTD", "name": "Trinidad and Tobago Dollar", "symbol": "$"}, {"code": "TWD", "name": "New Taiwan Dollar", "symbol": "$"}, {"code": "TZS", "name": "Tanzanian Shilling", "symbol": "TSh"}, {"code": "UAH", "name": "Ukrainian Hryvnia", "symbol": "₴"}, {"code": "UGX", "name": "Ugandan Shilling", "symbol": "USh"}, {"code": "USD", "name": "US Dollar", "symbol": "$"}, {"code": "UYU", "name": "Uruguayan Peso", "symbol": "$"}, {"code": "UZS", "name": "Uzbekistani Som", "symbol": "so'm"}, {"code": "VES", "name": "Venezuelan Bolívar", "symbol": "Bs."}, {"code": "VND", "name": "Vietnamese Dong", "symbol": "₫"}, {"code": "VUV", "name": "Vanuatu Vatu", "symbol": "VT"}, {"code": "WST", "name": "Samoan Tala", "symbol": "T"}, {"code": "XAF", "name": "Central African CFA Franc", "symbol": "FCFA"}, {"code": "XCD", "name": "East Caribbean Dollar", "symbol": "$"}, {"code": "XOF", "name": "West African CFA Franc", "symbol": "CFA"}, {"code": "YER", "name": "Yemeni Rial", "symbol": "﷼"}, {"code": "ZAR", "name": "South African Rand", "symbol": "R"}, {"code": "ZMW", "name": "Zambian Kwacha", "symbol": "ZK"}, {"code": "ZWL", "name": "Zimbabwean Dollar", "symbol": "$"}];
+const REGIONS = {"CH": ["Zurich", "Bern", "Lucerne", "Uri", "Schwyz", "Obwalden", "Nidwalden", "Glarus", "Zug", "Fribourg", "Solothurn", "Basel-Stadt", "Basel-Landschaft", "Schaffhausen", "Appenzell Ausserrhoden", "Appenzell Innerrhoden", "St. Gallen", "Graubünden", "Aargau", "Thurgau", "Ticino", "Vaud", "Valais", "Neuchâtel", "Geneva", "Jura"], "US": ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", "District of Columbia"], "CA": ["Alberta", "British Columbia", "Manitoba", "New Brunswick", "Newfoundland and Labrador", "Nova Scotia", "Ontario", "Prince Edward Island", "Quebec", "Saskatchewan", "Northwest Territories", "Nunavut", "Yukon"], "JP": ["Hokkaido", "Aomori", "Iwate", "Miyagi", "Akita", "Yamagata", "Fukushima", "Ibaraki", "Tochigi", "Gunma", "Saitama", "Chiba", "Tokyo", "Kanagawa", "Niigata", "Toyama", "Ishikawa", "Fukui", "Yamanashi", "Nagano", "Gifu", "Shizuoka", "Aichi", "Mie", "Shiga", "Kyoto", "Osaka", "Hyogo", "Nara", "Wakayama", "Tottori", "Shimane", "Okayama", "Hiroshima", "Yamaguchi", "Tokushima", "Kagawa", "Ehime", "Kochi", "Fukuoka", "Saga", "Nagasaki", "Kumamoto", "Oita", "Miyazaki", "Kagoshima", "Okinawa"], "DE": ["Baden-Württemberg", "Bavaria", "Berlin", "Brandenburg", "Bremen", "Hamburg", "Hesse", "Lower Saxony", "Mecklenburg-Vorpommern", "North Rhine-Westphalia", "Rhineland-Palatinate", "Saarland", "Saxony", "Saxony-Anhalt", "Schleswig-Holstein", "Thuringia"], "CN": ["Beijing", "Tianjin", "Shanghai", "Chongqing", "Hebei", "Shanxi", "Liaoning", "Jilin", "Heilongjiang", "Jiangsu", "Zhejiang", "Anhui", "Fujian", "Jiangxi", "Shandong", "Henan", "Hubei", "Hunan", "Guangdong", "Hainan", "Sichuan", "Guizhou", "Yunnan", "Shaanxi", "Gansu", "Qinghai", "Taiwan", "Guangxi", "Inner Mongolia", "Ningxia", "Xinjiang", "Tibet", "Hong Kong", "Macau"], "GR": ["Attica", "Central Greece", "Central Macedonia", "Crete", "Eastern Macedonia and Thrace", "Epirus", "Ionian Islands", "North Aegean", "Peloponnese", "South Aegean", "Thessaly", "Western Greece", "Western Macedonia"], "TH": ["Bangkok", "Chiang Mai", "Chiang Rai", "Phuket", "Krabi", "Surat Thani", "Chonburi", "Ayutthaya", "Nakhon Ratchasima", "Khon Kaen", "Songkhla", "Rayong", "Kanchanaburi", "Sukhothai", "Prachuap Khiri Khan"], "AU": ["New South Wales", "Victoria", "Queensland", "Western Australia", "South Australia", "Tasmania", "Australian Capital Territory", "Northern Territory"], "GB": ["England", "Scotland", "Wales", "Northern Ireland"], "FR": ["Île-de-France", "Auvergne-Rhône-Alpes", "Bourgogne-Franche-Comté", "Bretagne", "Centre-Val de Loire", "Corse", "Grand Est", "Hauts-de-France", "Normandie", "Nouvelle-Aquitaine", "Occitanie", "Pays de la Loire", "Provence-Alpes-Côte d'Azur"], "IT": ["Abruzzo", "Aosta Valley", "Apulia", "Basilicata", "Calabria", "Campania", "Emilia-Romagna", "Friuli-Venezia Giulia", "Lazio", "Liguria", "Lombardy", "Marche", "Molise", "Piedmont", "Sardinia", "Sicily", "Trentino-Alto Adige", "Tuscany", "Umbria", "Veneto"], "ES": ["Andalusia", "Aragon", "Asturias", "Balearic Islands", "Basque Country", "Canary Islands", "Cantabria", "Castile and León", "Castile-La Mancha", "Catalonia", "Extremadura", "Galicia", "La Rioja", "Madrid", "Murcia", "Navarre", "Valencia"], "PT": ["Aveiro", "Azores", "Beja", "Braga", "Bragança", "Castelo Branco", "Coimbra", "Évora", "Faro", "Guarda", "Leiria", "Lisbon", "Madeira", "Portalegre", "Porto", "Santarém", "Setúbal", "Viana do Castelo", "Vila Real", "Viseu"], "NL": ["Drenthe", "Flevoland", "Friesland", "Gelderland", "Groningen", "Limburg", "North Brabant", "North Holland", "Overijssel", "South Holland", "Utrecht", "Zeeland"], "AT": ["Burgenland", "Carinthia", "Lower Austria", "Salzburg", "Styria", "Tyrol", "Upper Austria", "Vienna", "Vorarlberg"], "MX": ["Aguascalientes", "Baja California", "Baja California Sur", "Campeche", "Chiapas", "Chihuahua", "Coahuila", "Colima", "Durango", "Guanajuato", "Guerrero", "Hidalgo", "Jalisco", "Mexico City", "Mexico State", "Michoacán", "Morelos", "Nayarit", "Nuevo León", "Oaxaca", "Puebla", "Querétaro", "Quintana Roo", "San Luis Potosí", "Sinaloa", "Sonora", "Tabasco", "Tamaulipas", "Tlaxcala", "Veracruz", "Yucatán", "Zacatecas"], "BR": ["Acre", "Alagoas", "Amapá", "Amazonas", "Bahia", "Ceará", "Distrito Federal", "Espírito Santo", "Goiás", "Maranhão", "Mato Grosso", "Mato Grosso do Sul", "Minas Gerais", "Pará", "Paraíba", "Paraná", "Pernambuco", "Piauí", "Rio de Janeiro", "Rio Grande do Norte", "Rio Grande do Sul", "Rondônia", "Roraima", "Santa Catarina", "São Paulo", "Sergipe", "Tocantins"], "IN": ["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi", "Jammu and Kashmir", "Ladakh"], "VN": ["Hanoi", "Ho Chi Minh City", "Da Nang", "Hai Phong", "Can Tho", "Khanh Hoa", "Quang Ninh", "Thua Thien Hue", "Lam Dong", "Kien Giang"], "KR": ["Seoul", "Busan", "Incheon", "Daegu", "Daejeon", "Gwangju", "Ulsan", "Sejong", "Gyeonggi", "Gangwon", "North Chungcheong", "South Chungcheong", "North Jeolla", "South Jeolla", "North Gyeongsang", "South Gyeongsang", "Jeju"], "NZ": ["Auckland", "Bay of Plenty", "Canterbury", "Gisborne", "Hawke's Bay", "Manawatu-Whanganui", "Marlborough", "Nelson", "Northland", "Otago", "Southland", "Taranaki", "Tasman", "Waikato", "Wellington", "West Coast"], "ZA": ["Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal", "Limpopo", "Mpumalanga", "Northern Cape", "North West", "Western Cape"], "EG": ["Cairo", "Alexandria", "Giza", "Luxor", "Aswan", "Red Sea", "South Sinai", "Matruh", "Suez"], "MA": ["Casablanca-Settat", "Rabat-Salé-Kénitra", "Marrakesh-Safi", "Fès-Meknès", "Tanger-Tétouan-Al Hoceïma", "Souss-Massa", "Oriental", "Béni Mellal-Khénifra", "Drâa-Tafilalet", "Guelmim-Oued Noun", "Laâyoune-Sakia El Hamra", "Dakhla-Oued Ed-Dahab"], "AE": ["Abu Dhabi", "Dubai", "Sharjah", "Ajman", "Umm Al Quwain", "Ras Al Khaimah", "Fujairah"], "SA": ["Riyadh", "Makkah", "Madinah", "Eastern Province", "Asir", "Tabuk", "Qassim", "Hail", "Northern Borders", "Jazan", "Najran", "Al Bahah", "Al Jawf"], "TR": ["Istanbul", "Ankara", "Izmir", "Antalya", "Bursa", "Adana", "Muğla", "Cappadocia (Nevşehir)", "Trabzon", "Konya"], "PL": ["Masovian", "Lesser Poland", "Silesian", "Greater Poland", "Lower Silesian", "Pomeranian", "West Pomeranian", "Łódź", "Lublin", "Subcarpathian", "Podlaskie", "Warmian-Masurian", "Kuyavian-Pomeranian", "Świętokrzyskie", "Opole", "Lubusz"], "CZ": ["Prague", "Central Bohemian", "South Bohemian", "Plzeň", "Karlovy Vary", "Ústí nad Labem", "Liberec", "Hradec Králové", "Pardubice", "Vysočina", "South Moravian", "Olomouc", "Zlín", "Moravian-Silesian"], "IE": ["Leinster", "Munster", "Connacht", "Ulster (Republic of Ireland)"], "BE": ["Flanders", "Wallonia", "Brussels-Capital"], "CH2": [], "SG": ["Singapore (city-state)"], "HK": []};
+const CCY_INDEX = Object.fromEntries(CURRENCIES.map(c=>[c.code,c]));
+const TODAY = new Date("2026-08-24"); // app "current date" context for staleness checks
+
+function fmtDate(d){ return d.toISOString().slice(0,10); }
+function daysSince(dateStr){
+  const d = new Date(dateStr);
+  if(isNaN(d)) return 9999;
+  return Math.round((TODAY - d)/86400000);
+}
+function ccySym(code){ return (CCY_INDEX[code]&&CCY_INDEX[code].symbol) || code; }
+function money(amount, code){
+  if(amount===null||amount===undefined||isNaN(amount)) return "—";
+  return ccySym(code)+" "+amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+(CCY_INDEX[code]?"":" "+code);
+}
+function uid(){ return Math.random().toString(36).slice(2,10); }
+// Logging must never be able to break application logic. This sandboxed runtime doesn't
+// reliably expose a callable console.debug (and possibly not other console methods either),
+// so every log call is routed through this guard rather than calling console.* directly.
+function safeDebug(...args){
+  try{
+    if(typeof console !== "undefined" && console && typeof console.debug === "function"){
+      console.debug(...args);
+    } else if(typeof console !== "undefined" && console && typeof console.log === "function"){
+      console.log(...args);
+    }
+  }catch(_e){ /* never let logging break the app */ }
+}
+function safeError(...args){
+  try{
+    if(typeof console !== "undefined" && console && typeof console.error === "function"){
+      console.error(...args);
+    } else {
+      safeDebug(...args);
+    }
+  }catch(_e){ /* never let logging break the app */ }
+}
+// Safe event-binding helper: dynamically created UI means an element may legitimately not exist
+// yet (e.g. an empty-state view with no button). Never assume — always guard.
+function on(id, evt, handler){
+  const el = document.getElementById(id);
+  if(el) el['on'+evt] = handler;
+  return el;
+}
+
+/* ============================= STATE ============================= */
+let state = {
+  homeCountry: null, // iso2
+  homeCurrency: null, // code
+  countries: [],     // { iso2, name, currency, places:[...] }
+  rateCache: {},      // "FROM_TO" -> {rate,date,sourceName,sourceUrl}
+  activeTab: 'trip'
+};
+
+function findCountry(iso2){ return state.countries.find(c=>c.iso2===iso2); }
+
+function ensureCountry(iso2){
+  let c = findCountry(iso2);
+  if(!c){
+    const base = COUNTRIES.find(x=>x.iso2===iso2);
+    c = {iso2, name: base.name, currency: base.currency, places: []};
+    state.countries.push(c);
+  }
+  return c;
+}
+
+/* ============================= AI CALLS ============================= */
+// NOTE: fetch() in this sandboxed environment is relayed to the host frame, which cannot
+// structured-clone an AbortSignal/AbortController through that channel. So timeouts here are
+// implemented with a plain Promise.race + setTimeout instead of AbortController — no signal
+// is ever passed into fetch() options, and no non-serializable object crosses any message boundary.
+function fetchClaudeRaw(body, timeoutMs){
+  const ms = timeoutMs || 25000;
+  const fetchPromise = fetch("https://api.anthropic.com/v1/messages", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(body)
+  }).then(async response=>{
+    if(!response.ok){
+      let detail = '';
+      try{ detail = await response.text(); }catch(e){}
+      const err = new Error(`HTTP ${response.status}`);
+      err.kind = (response.status>=500 || response.status===429) ? 'network' : 'http';
+      err.detail = detail;
+      throw err;
+    }
+    return await response.json();
+  }).catch(e=>{
+    if(!e.kind) e.kind = 'network'; // fetch threw (CORS, offline, DNS, endpoint unreachable, etc.)
+    throw e;
+  });
+  const timeoutPromise = new Promise((_, reject)=>{
+    setTimeout(()=>{
+      const te = new Error('Request timed out');
+      te.kind = 'network';
+      reject(te);
+    }, ms);
+  });
+  return Promise.race([fetchPromise, timeoutPromise]);
+}
+
+// Retries once on network-type failures (not on a clean HTTP 4xx or a parse issue) before giving up.
+async function callClaude(system, user, maxTok, debugLabel){
+  const reqId = uid();
+  const body = {
+    model: "claude-sonnet-4-6",
+    max_tokens: maxTok || 1000,
+    system: system,
+    messages: [{role:"user", content: user}],
+    tools: [{type:"web_search_20250305", name:"web_search"}]
+  };
+  safeDebug(`[Waypoint search] start`, {requestId:reqId, label:debugLabel||'query', provider:'claude-sonnet-4-6 + web_search'});
+  let data;
+  try{
+    data = await fetchClaudeRaw(body, 25000);
+  }catch(firstErr){
+    if(firstErr.kind === 'network'){
+      safeDebug(`[Waypoint search] retrying after transient failure`, {requestId:reqId, errorType:firstErr.kind});
+      await new Promise(r=>setTimeout(r, 800));
+      try{
+        data = await fetchClaudeRaw(body, 25000);
+      }catch(secondErr){
+        secondErr.kind = secondErr.kind || 'network';
+        secondErr.searchUnavailable = true;
+        safeDebug(`[Waypoint search] failed`, {requestId:reqId, errorType:secondErr.kind, message:secondErr.message});
+        throw secondErr;
+      }
+    } else {
+      firstErr.searchUnavailable = true;
+      safeDebug(`[Waypoint search] failed`, {requestId:reqId, errorType:firstErr.kind, message:firstErr.message});
+      throw firstErr;
+    }
+  }
+  const text = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n");
+  if(!text){
+    safeDebug(`[Waypoint search] empty response`, {requestId:reqId});
+    const e = new Error('Empty response'); e.kind='parse'; throw e;
+  }
+  safeDebug(`[Waypoint search] success`, {requestId:reqId, responseLength:text.length});
+  return text;
+}
+function extractJSON(text){
+  let t = text.trim().replace(/^```json/i,"").replace(/^```/,"").replace(/```$/,"").trim();
+  const first = t.indexOf("{"); const last = t.lastIndexOf("}");
+  if(first>=0 && last>first) t = t.slice(first,last+1);
+  try{ return JSON.parse(t); }catch(e){ return null; }
+}
+function friendlySearchError(e){
+  // Never surface raw network/CORS/HTTP jargon to the user.
+  safeError('Waypoint search error:', e && e.kind, e && e.message, e && e.detail);
+  return "Verified search temporarily unavailable";
+}
+
+async function aiSearchPlaceOnce(name, type, city, region, island, countryName, currency, extraHint){
+  const system = `You are a travel-pricing research assistant. Use web search to find REAL, currently-listed information about the specific place named by the user. You MUST base every price on an actual source you found via search this turn — never estimate or invent a number. A price is only "verified" when the source you found actually states that price for that item — do not turn a general mention of the place into a verified price.
+Source policy — the information must be verifiable and traceable to an authoritative source, but it does NOT need to come only from the business's own website. Acceptable sources, in preference order:
+(1) "Official" — the place/event/attraction's own official website or verified official ticketing page.
+(2) "Officially Sourced" — a reliable source that reproduces or provides information originating from an official source: official tourism authorities/boards, government sources, authorized ticket sellers, recognized event/ticket platforms, or a reputable database that clearly cites official information.
+(3) "Verified Secondary" — a reputable source with verifiable information when no official or officially-sourced option exists.
+Never use an "Unverified" source in the results.
+Respond with ONLY one JSON object, no markdown fences, no commentary, no explanation text outside the JSON.
+JSON schema:
+{
+ "found": boolean (true if you identified this REAL place at all, even if you couldn't verify a price),
+ "reason": string (only if found=false — why the place itself couldn't be identified),
+ "place": {"name": string, "type": string, "address": string, "island": string|null, "matchedCurrency": ISO4217 code},
+ "pricingVerified": boolean (true only if "items" contains at least one real sourced price),
+ "sourceQuality": "Official" | "Officially Sourced" | "Verified Secondary" | null,
+ "sourceName": string|null,
+ "sourceUrl": string|null (direct pricing/menu page if possible),
+ "verifiedDate": "${fmtDate(TODAY)}",
+ "items": [
+   {"name": string, "category": "ticket"|"food"|"drink"|"souvenir"|"activity"|"merchandise"|"other",
+    "priceType": "exact"|"range", "price": number|null, "minPrice": number|null, "maxPrice": number|null,
+    "currency": ISO4217 code}
+ ]
+}
+If you find the place but no page you can access states real prices, set found:true, pricingVerified:false, items:[]. Include at most 8 of the most relevant priced items when pricing is verified.`;
+  const user = `Place name: "${name}"\nPlace type: ${type||"(unspecified — infer from context)"}\nCity/Area: ${city||"(unspecified)"}\nIsland/Area: ${island||"(unspecified)"}\nRegion: ${region||"(unspecified)"}\nCountry: ${countryName}\nExpected local currency: ${currency}\nToday's date: ${fmtDate(TODAY)}${extraHint? "\n"+extraHint : ""}\n\nSearch the web now and return the JSON described in the system prompt.`;
+  const text = await callClaude(system, user, 1000, `place:${name}`);
+  const parsed = extractJSON(text);
+  safeDebug("[Waypoint search] place search parsed", {query:name, found: parsed && parsed.found, pricingVerified: parsed && parsed.pricingVerified, itemCount: parsed && parsed.items ? parsed.items.length : 0});
+  return parsed;
+}
+
+async function aiSearchPlace(name, type, city, region, island, countryName, currency){
+  let res = await aiSearchPlaceOnce(name, type, city, region, island, countryName, currency);
+  // Source fallback (per spec #26): if the place was found but no price was verified on the first pass,
+  // make one more attempt with a pricing-focused hint before giving up.
+  if(res && res.found && !res.pricingVerified){
+    const retry = await aiSearchPlaceOnce(name, type, city, region, island, countryName, currency,
+      `Your first search found the place but no verified price. Search again specifically for ticket prices, a menu, or admission/pricing information for "${name}" (try queries like "${name} tickets", "${name} prices", "${name} menu"). Only report items you can now verify.`);
+    if(retry && retry.pricingVerified) res = retry;
+  }
+  return res;
+}
+
+async function aiSearchCandidates(query, countryName, region, island, city, typeHint){
+  const system = `You are a travel-search assistant. The user typed a loose, possibly partial or multi-word search query (fragments, word-order variations, abbreviations, or a well-known alias are all fine — the user does NOT need to know the exact official name). Use web search to find real candidate matches: real named places (restaurants, museums, attractions, theme parks, events, etc.) OR real destination areas/islands within the given country. Tokenize the query into its important terms and match against official names, alternate/local/common names, and known aliases — rank the best, most relevant matches first (exact name match > alias match > multi-word match > partial match > category match). Do not invent places. Respond with ONLY one JSON object, no markdown fences, no commentary:
+{
+ "results": [
+   {"name": string, "type": string ("Island"/"Area/Destination" for a geographic area, otherwise the place type e.g. "Museum","Restaurant"),
+    "island": string|null, "region": string|null, "city": string|null, "address": string|null,
+    "isArea": boolean (true if this result is itself an island/district/destination area rather than a specific priced place)}
+ ]
+}
+Return at most 8 results, best matches first. If the query provided a city/area/island/region, prefer results located there, but do not exclude good matches elsewhere in the country just because location fields were left blank.`;
+  const user = `Country: ${countryName}\nRegion (optional): ${region||"(none given)"}\nIsland/Area (optional): ${island||"(none given)"}\nCity/Area (optional): ${city||"(none given)"}\nType hint (optional): ${typeHint||"(none — search broadly)"}\nSearch query: "${query}"\nToday's date: ${fmtDate(TODAY)}\n\nSearch the web now and return the ranked JSON candidate list described in the system prompt.`;
+  const text = await callClaude(system, user, 800, `candidates:${query}`);
+  const parsed = extractJSON(text);
+  safeDebug("[Waypoint search] candidate search parsed", {query, resultCount: parsed && parsed.results ? parsed.results.length : 0});
+  return parsed;
+}
+
+async function aiGetRate(fromCcy, toCcy){
+  const key = fromCcy+"_"+toCcy;
+  if(fromCcy===toCcy) return {rate:1, date: fmtDate(TODAY), sourceName:"Same currency", sourceUrl:""};
+  if(state.rateCache[key]) return state.rateCache[key];
+  const system = `Use web search to find the current real market exchange rate between two ISO 4217 currency codes. Prefer the European Central Bank reference rate when either currency is EUR-relevant or ECB publishes it; otherwise use another authoritative financial source (e.g. a major central bank or a reputable financial data provider). Respond with ONLY one JSON object, no commentary, no markdown fences:
+{"rate": number, "date": "YYYY-MM-DD", "sourceName": string, "sourceUrl": string}
+"rate" must mean: 1 unit of FROM = rate units of TO. Do not guess — only report a rate you found via search this turn.`;
+  const user = `FROM currency: ${fromCcy}\nTO currency: ${toCcy}\nToday's date: ${fmtDate(TODAY)}`;
+  const text = await callClaude(system, user, 500, `rate:${fromCcy}->${toCcy}`);
+  const j = extractJSON(text);
+  if(j && typeof j.rate === "number"){
+    state.rateCache[key] = j;
+    return j;
+  }
+  return null;
+}
+
+/* ============================= CALC HELPERS ============================= */
+function itemSubtotal(item){
+  const q = item.qty||1;
+  if(item.priceType==="range"){
+    return { min: (item.minPrice||0)*q, max: (item.maxPrice||0)*q, isRange:true };
+  }
+  return { min: (item.price||0)*q, max:(item.price||0)*q, isRange:false };
+}
+function placeTotals(place){
+  let min=0,max=0,hasRange=false, byCat={};
+  place.items.forEach(it=>{
+    const s = itemSubtotal(it);
+    min+=s.min; max+=s.max; if(s.isRange) hasRange=true;
+    byCat[it.category] = byCat[it.category] || {min:0,max:0};
+    byCat[it.category].min += s.min; byCat[it.category].max += s.max;
+  });
+  return {min,max,hasRange,byCat};
+}
+function countryTotals(country){
+  let min=0,max=0,hasRange=false, byCat={};
+  country.places.forEach(p=>{
+    const t = placeTotals(p);
+    min+=t.min; max+=t.max; if(t.hasRange) hasRange=true;
+    Object.keys(t.byCat).forEach(cat=>{
+      byCat[cat] = byCat[cat]||{min:0,max:0};
+      byCat[cat].min += t.byCat[cat].min; byCat[cat].max += t.byCat[cat].max;
+    });
+  });
+  return {min,max,hasRange,byCat};
+}
+function allItemsFlat(){
+  const out=[];
+  state.countries.forEach(c=>c.places.forEach(p=>p.items.forEach(it=>out.push({country:c,place:p,item:it}))));
+  return out;
+}
+
+/* ============================= RENDER SHELL ============================= */
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    ${renderHeader()}
+    ${renderTabs()}
+    <div class="view">${renderActiveView()}</div>
+  `;
+  wireHeader();
+  wireTabs();
+  wireActiveView();
+}
+
+function renderHeader(){
+  const countryOpts = COUNTRIES.map(c=>`<option value="${c.iso2}" ${state.homeCountry===c.iso2?'selected':''}>${c.name}</option>`).join('');
+  const ccyOpts = CURRENCIES.map(c=>`<option value="${c.code}" ${state.homeCurrency===c.code?'selected':''}>${c.code} — ${c.name}</option>`).join('');
+  return `
+  <div class="header">
+    <div class="brandrow">
+      <div class="brand"><h1>Waypoint</h1><span class="tag">Travel Cost Calculator</span></div>
+      <div class="homebar">
+        <label>Home Country</label>
+        <select id="homeCountrySel"><option value="">Select…</option>${countryOpts}</select>
+        <label>Home Currency</label>
+        <select id="homeCurrencySel"><option value="">Select…</option>${ccyOpts}</select>
+      </div>
+    </div>
+  </div>`;
+}
+function wireHeader(){
+  on('homeCountrySel','change', e=>{
+    state.homeCountry = e.target.value || null;
+    const base = COUNTRIES.find(c=>c.iso2===state.homeCountry);
+    if(base && !state.homeCurrency) state.homeCurrency = base.currency;
+    render();
+  });
+  on('homeCurrencySel','change', e=>{
+    state.homeCurrency = e.target.value || null;
+    render();
+  });
+}
+
+function renderTabs(){
+  const totalPlaces = state.countries.reduce((a,c)=>a+c.places.length,0);
+  const totalItems = allItemsFlat().length;
+  const tabs = [
+    ['trip','Trip Setup'],
+    ['destinations','Destinations & Places', totalPlaces],
+    ['selections','My Selections', totalItems],
+    ['money','Money Needed'],
+    ['sources','Sources', totalItems]
+  ];
+  return `<div class="tabs">${tabs.map(t=>`
+    <div class="tab ${state.activeTab===t[0]?'active':''}" data-tab="${t[0]}">${t[1]}${t[2]?`<span class="n">${t[2]}</span>`:''}</div>
+  `).join('')}</div>`;
+}
+function wireTabs(){
+  document.querySelectorAll('.tab').forEach(el=>{
+    el.onclick = ()=>{ state.activeTab = el.dataset.tab; render(); };
+  });
+}
+
+function renderActiveView(){
+  if(!state.homeCountry || !state.homeCurrency){
+    if(state.activeTab!=='trip'){
+      return `<div class="empty"><h3>Set your home country & currency first</h3><p>Use the fields in the top bar, then head to the Trip Setup tab.</p></div>`;
+    }
+  }
+  switch(state.activeTab){
+    case 'trip': return renderTrip();
+    case 'destinations': return renderDestinations();
+    case 'selections': return renderSelections();
+    case 'money': return renderMoney();
+    case 'sources': return renderSources();
+    default: return '';
+  }
+}
+function wireActiveView(){
+  switch(state.activeTab){
+    case 'trip': wireTrip(); break;
+    case 'destinations': wireDestinations(); break;
+    case 'selections': wireSelections(); break;
+    case 'money': wireMoney(); break;
+    case 'sources': break;
+  }
+}
+
+/* ============================= TAB: TRIP SETUP ============================= */
+function renderTrip(){
+  return `
+  <div class="section-title"><h2>Trip Setup</h2></div>
+  <div class="section-sub">Choose where your home base is, then add the countries you're visiting. Hotels and accommodation are out of scope — this covers restaurants, museums, attractions, theme parks, events, activities, tickets and souvenirs only.</div>
+
+  <div class="card">
+    <h3 style="font-size:15px;margin-bottom:12px;">Countries in this trip</h3>
+    <div id="tripCountryChips">${state.countries.length? state.countries.map(c=>`
+      <span class="chip">${c.name} <span class="mono" style="color:var(--ink-soft);font-size:11.5px;">${c.currency}</span> <button data-rm="${c.iso2}" title="Remove country">✕</button></span>
+    `).join('') : '<span class="note">No countries added yet.</span>'}</div>
+    <div style="margin-top:14px;max-width:360px;">
+      <div class="field searchbox">
+        <label>Add a country</label>
+        <input type="text" id="tripCountrySearch" placeholder="Search countries…" autocomplete="off">
+        <div class="searchresults" id="tripCountryResults" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="background:var(--paper-dim);border-style:dashed;">
+    <div class="note" style="font-size:12.5px;line-height:1.6;">
+      <strong>How pricing works here:</strong> when you add a place under <em>Destinations &amp; Places</em>, Waypoint searches the live web for that specific place and pulls real, sourced prices — it never invents a number. Every price shown carries a source name, a link, and the date it was checked. If nothing verifiable turns up, the app tells you rather than guessing.
+    </div>
+  </div>`;
+}
+function wireTrip(){
+  const input = document.getElementById('tripCountrySearch');
+  const results = document.getElementById('tripCountryResults');
+  input.oninput = ()=>{
+    const q = input.value.trim().toLowerCase();
+    if(!q){ results.style.display='none'; return; }
+    const matches = COUNTRIES.filter(c=>c.name.toLowerCase().includes(q)).slice(0,12);
+    results.innerHTML = matches.map(c=>`<div data-add="${c.iso2}">${c.name} <span class="mono" style="color:var(--ink-soft);font-size:11.5px;">${c.iso2} · ${c.currency}</span></div>`).join('') || '<div style="color:var(--ink-soft);">No matches</div>';
+    results.style.display='block';
+    results.querySelectorAll('[data-add]').forEach(el=>{
+      el.onclick = ()=>{ ensureCountry(el.dataset.add); input.value=''; results.style.display='none'; render(); state.activeTab='trip'; };
+    });
+  };
+  document.querySelectorAll('[data-rm]').forEach(el=>{
+    el.onclick = ()=>{
+      state.countries = state.countries.filter(c=>c.iso2!==el.dataset.rm);
+      render();
+    };
+  });
+}
+
+/* ============================= TAB: DESTINATIONS & PLACES ============================= */
+let uiDestCountry = null; // currently selected country iso2 in this tab
+let uiSearchState = {}; // per pending search: {loading, result, error, form:{name,type,city,region}}
+
+function renderDestinations(){
+  if(!state.countries.length){
+    return `<div class="empty"><h3>Add a country first</h3><p>Go to Trip Setup to add at least one destination country.</p></div>`;
+  }
+  if(!uiDestCountry || !findCountry(uiDestCountry)) uiDestCountry = state.countries[0].iso2;
+  const country = findCountry(uiDestCountry);
+  const regionOptions = REGIONS[country.iso2] || [];
+
+  return `
+  <div class="section-title"><h2>Destinations &amp; Places</h2></div>
+  <div class="section-sub">Pick a country, then search for a real place inside it — an island or area can be the destination on its own, and none of these location fields are required before searching. Waypoint looks it up live and returns sourced prices you can add to your trip.</div>
+
+  <div style="margin-bottom:16px;">
+    ${state.countries.map(c=>`<button class="btn ${c.iso2===uiDestCountry?'':'ghost'} sm" data-country="${c.iso2}" style="margin:0 8px 8px 0;">${c.name}</button>`).join('')}
+  </div>
+
+  <div class="card">
+    <div class="grid3">
+      <div class="field">
+        <label>Region / State / Province (optional)</label>
+        ${regionOptions.length ? `
+          <input list="regionList" id="regionInput" placeholder="Choose a region…">
+          <datalist id="regionList">${regionOptions.map(r=>`<option value="${r}">`).join('')}</datalist>
+        ` : `<input type="text" id="regionInput" placeholder="e.g. a state, province, prefecture…">`}
+      </div>
+      <div class="field">
+        <label>Island / Area (optional)</label>
+        <input type="text" id="islandInput" placeholder="e.g. Zakynthos, Sicily, Bali">
+      </div>
+      <div class="field">
+        <label>City / Area (optional)</label>
+        <input type="text" id="cityInput" placeholder="e.g. Zurich — leave blank to skip">
+      </div>
+    </div>
+    <div class="note" style="margin-top:8px;">Fill in whatever you know — region, island, city, all, or none. You can search with just a country and a place name.</div>
+
+    <div class="grid2" style="margin-top:16px;">
+      <div class="field">
+        <label>Search for a place</label>
+        <input type="text" id="placeNameInput" placeholder="Full name, partial name, or a few words — e.g. &quot;natural history&quot;, &quot;comic con&quot;, or &quot;Zakynthos&quot;">
+      </div>
+      <div class="field">
+        <label>Type (optional hint)</label>
+        <select id="placeTypeInput">
+          <option value="">Any type — search broadly</option>
+          ${["Restaurant","Tavern","Café","Museum","Gallery","Tourist Attraction","Theme Park","Water Park","Zoo","Aquarium","Nature Park","Bird Watching Site","Observation Site","Cultural Site","Historic Site","Event","Comic Convention","Festival","Workshop","Guided Tour","Other paid attraction"].map(t=>`<option>${t}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn brass" id="searchPlaceBtn">Search for verified info</button>
+      <button class="btn ghost" id="browseMatchesBtn">Not sure of the exact name? Browse matches</button>
+      <button class="btn ghost" id="manualAddBtn">Add manually with a source I have</button>
+    </div>
+    <div id="searchStatus"></div>
+    <div id="candidateResults"></div>
+    <div id="searchResultCard"></div>
+  </div>
+
+  <div class="card" id="manualForm" style="display:none;"></div>
+
+  <h3 style="font-size:15px;margin:20px 0 10px;">Places added in ${country.name}</h3>
+  ${country.places.length ? country.places.map(p=>renderPlaceCard(country,p)).join('') : `<div class="empty">No places added yet for ${country.name}.</div>`}
+  `;
+}
+
+function renderPlaceCard(country, place){
+  const t = placeTotals(place);
+  const totalStr = t.hasRange ? `${money(t.min,place.currency)} – ${money(t.max,place.currency)}` : money(t.min, place.currency);
+  const stale = daysSince(place.verifiedDate) > 30;
+  return `
+  <div class="place-item">
+    <div class="rowtop">
+      <div>
+        <strong>${place.name}</strong> <span class="pill" style="margin-left:6px;">${place.type}</span>
+        <div class="item-meta">${[place.city,place.island,place.region,country.name].filter(Boolean).join(' · ')}</div>
+        <div style="margin-top:6px;">
+          ${sourcePill(place.sourceQuality)}
+          ${place.sourceUrl ? `<a class="srclink" href="${place.sourceUrl}" target="_blank" rel="noopener">${place.sourceName||'Source'}</a>` : `<span class="note">${place.sourceName||'No source link'}</span>`}
+          <span class="note"> · verified ${place.verifiedDate}</span>
+          ${stale?`<span class="pill stale" style="margin-left:6px;">Price may have changed</span>`:''}
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div class="mono" style="font-weight:600;">${totalStr}</div>
+        <button class="btn ghost sm" data-rmplace="${place.id}" style="margin-top:8px;">Remove place</button>
+      </div>
+    </div>
+    ${place.items.length? place.items.map(it=>renderItemRow(country,place,it)).join('') : `<div class="note" style="margin-top:8px;">No priced items added yet.</div>`}
+  </div>`;
+}
+function sourcePill(q){
+  if(q==='Official') return `<span class="pill official">Official</span>`;
+  if(q==='Officially Sourced' || q==='Official Tourism') return `<span class="pill tourism">Officially Sourced</span>`;
+  if(q==='Manual') return `<span class="pill manual">User-supplied</span>`;
+  return `<span class="pill secondary">Verified Secondary</span>`;
+}
+function renderItemRow(country, place, it){
+  const s = itemSubtotal(it);
+  const subStr = it.priceType==='range' ? `${money(s.min,it.currency)} – ${money(s.max,it.currency)}` : money(s.min,it.currency);
+  const priceStr = it.priceType==='range' ? `${money(it.minPrice,it.currency)}–${money(it.maxPrice,it.currency)}` : money(it.price,it.currency);
+  return `
+  <div class="item-row">
+    <div>
+      <div>${it.name} <span class="note" style="text-transform:capitalize;">(${it.category})</span></div>
+      <div class="item-meta">${priceStr} × <input type="number" min="1" class="qty-input mono" value="${it.qty}" data-qty="${place.id}|${it.id}"> = <span class="mono">${subStr}</span></div>
+    </div>
+    <button class="btn ghost sm" data-rmitem="${place.id}|${it.id}">Remove</button>
+  </div>`;
+}
+
+function wireDestinations(){
+  document.querySelectorAll('[data-country]').forEach(el=>{
+    el.onclick=()=>{ uiDestCountry = el.dataset.country; render(); };
+  });
+  document.querySelectorAll('[data-rmplace]').forEach(el=>{
+    el.onclick=()=>{
+      const c = findCountry(uiDestCountry);
+      c.places = c.places.filter(p=>p.id!==el.dataset.rmplace);
+      render();
+    };
+  });
+  document.querySelectorAll('[data-rmitem]').forEach(el=>{
+    el.onclick=()=>{
+      const [pid,iid] = el.dataset.rmitem.split('|');
+      const c = findCountry(uiDestCountry);
+      const p = c.places.find(x=>x.id===pid);
+      p.items = p.items.filter(i=>i.id!==iid);
+      render();
+    };
+  });
+  document.querySelectorAll('[data-qty]').forEach(el=>{
+    el.onchange=()=>{
+      const [pid,iid] = el.dataset.qty.split('|');
+      const c = findCountry(uiDestCountry);
+      const p = c.places.find(x=>x.id===pid);
+      const it = p.items.find(i=>i.id===iid);
+      it.qty = Math.max(1, parseInt(el.value)||1);
+      render();
+    };
+  });
+
+  // These controls only exist once at least one country has been added (see renderDestinations'
+  // empty state) — guard every lookup so a null element never throws.
+  on('manualAddBtn','click', ()=>renderManualForm());
+  on('searchPlaceBtn','click', ()=>runDetailedSearch());
+  on('browseMatchesBtn','click', ()=>runCandidateSearch());
+}
+
+function currentDestFormValues(){
+  return {
+    name: document.getElementById('placeNameInput').value.trim(),
+    type: document.getElementById('placeTypeInput').value,
+    city: document.getElementById('cityInput').value.trim(),
+    region: document.getElementById('regionInput').value.trim(),
+    island: document.getElementById('islandInput').value.trim()
+  };
+}
+
+let lastDetailedSearchArgs = null;
+let lastCandidateSearchArgs = null;
+
+function renderSearchUnavailableCard(retryFn){
+  return `<div class="warn-banner">
+    <strong>Verified search temporarily unavailable.</strong> Online verification search couldn't complete right now — this is usually temporary. You can retry, or add the place manually using a source you already have.
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn stamp sm" id="retrySearchBtn">Retry Search</button>
+      <button class="btn ghost sm" id="goManualBtn">Add Manually</button>
+    </div>
+  </div>`;
+}
+function wireUnavailableCard(retryFn, prefill){
+  const retryBtn = document.getElementById('retrySearchBtn');
+  const manualBtn = document.getElementById('goManualBtn');
+  if(retryBtn) retryBtn.onclick = retryFn;
+  if(manualBtn) manualBtn.onclick = ()=>renderManualForm(prefill);
+}
+
+async function runDetailedSearch(nameOverride, typeOverride){
+  const f = currentDestFormValues();
+  const name = nameOverride!==undefined ? nameOverride : f.name;
+  const type = typeOverride!==undefined ? typeOverride : f.type;
+  const country = findCountry(uiDestCountry);
+  if(!name){ alert('Enter a place name or search terms first.'); return; }
+  lastDetailedSearchArgs = {name, type, city:f.city, region:f.region, island:f.island};
+  const statusEl = document.getElementById('searchStatus');
+  const resultEl = document.getElementById('searchResultCard');
+  document.getElementById('candidateResults').innerHTML = '';
+  statusEl.innerHTML = `<div class="loading-line"><div class="spinner"></div> Searching verified sources…</div>`;
+  resultEl.innerHTML = '';
+  try{
+    const res = await aiSearchPlace(name, type, f.city, f.region, f.island, country.name, country.currency);
+    statusEl.innerHTML = '';
+    if(!res){
+      resultEl.innerHTML = `<div class="warn-banner"><strong>No matching verified source found.</strong> The search completed but the response couldn't be read. Try rephrasing, use "Browse matches", or add it manually.</div>`;
+      return;
+    }
+    if(!res.found){
+      resultEl.innerHTML = `<div class="warn-banner"><strong>No matching verified source found.</strong> ${res.reason||'Try broader search terms with "Browse matches", or add it manually if you already have a source.'}</div>`;
+      return;
+    }
+    if(!res.pricingVerified || !(res.items&&res.items.length)){
+      resultEl.innerHTML = `
+        <div class="card" style="background:var(--paper-dim);margin-top:14px;">
+          <strong>${res.place.name}</strong> <span class="pill">${res.place.type||type||'Place'}</span>
+          <div class="item-meta">${[res.place.address, res.place.island||f.island, f.city, f.region].filter(Boolean).join(' · ')}</div>
+          <div class="warn-banner" style="margin-top:10px;">
+            <strong>Place found — price not verified.</strong> Waypoint located this real place but couldn't confirm an actual price from a traceable source. It has not been added, and no price has been invented.
+          </div>
+          <button class="btn ghost sm" id="goManualBtn2">Add manually with a source I have</button>
+        </div>`;
+      const mb = document.getElementById('goManualBtn2');
+      if(mb) mb.onclick = ()=>renderManualForm({name:res.place.name, type:res.place.type||type, city:f.city, island:res.place.island||f.island});
+      return;
+    }
+    resultEl.innerHTML = renderSearchResult(res, name, type, f.city, f.region, f.island);
+    wireSearchResult(res, type, f.city, f.region, f.island);
+  }catch(e){
+    statusEl.innerHTML = '';
+    resultEl.innerHTML = renderSearchUnavailableCard();
+    wireUnavailableCard(()=>runDetailedSearch(lastDetailedSearchArgs.name, lastDetailedSearchArgs.type), {name});
+    friendlySearchError(e);
+  }
+}
+
+async function runCandidateSearch(){
+  const f = currentDestFormValues();
+  if(!f.name){ alert('Type a name or a few search words first — it can be partial, e.g. "natural history" or "comic con".'); return; }
+  lastCandidateSearchArgs = f;
+  const country = findCountry(uiDestCountry);
+  const statusEl = document.getElementById('searchStatus');
+  const candEl = document.getElementById('candidateResults');
+  document.getElementById('searchResultCard').innerHTML = '';
+  statusEl.innerHTML = `<div class="loading-line"><div class="spinner"></div> Searching verified sources…</div>`;
+  candEl.innerHTML = '';
+  try{
+    const res = await aiSearchCandidates(f.name, country.name, f.region, f.island, f.city, f.type);
+    statusEl.innerHTML = '';
+    if(!res || !res.results || !res.results.length){
+      candEl.innerHTML = `<div class="warn-banner"><strong>No matching verified source found.</strong> Nothing turned up for "${f.name}" in ${country.name}. Try different search terms, or add it manually.</div>`;
+      return;
+    }
+    candEl.innerHTML = `
+      <div class="card" style="background:var(--paper-dim);margin-top:14px;">
+        <div class="note" style="margin-bottom:10px;">Matches for "${f.name}" — best matches first. Pick one to fetch verified prices, or pick an island/area to narrow your search.</div>
+        ${res.results.map((r,idx)=>`
+          <div class="item-row">
+            <div>
+              <div><strong>${r.name}</strong> <span class="pill" style="margin-left:4px;">${r.isArea? 'Island / Area' : (r.type||'Place')}</span></div>
+              <div class="item-meta">${[r.city,r.island,r.region].filter(Boolean).join(' · ')}${r.address? ' · '+r.address:''}</div>
+            </div>
+            <button class="btn ${r.isArea?'ghost':'brass'} sm" data-cand="${idx}">${r.isArea? 'Use as island/area' : 'View verified prices'}</button>
+          </div>
+        `).join('')}
+      </div>`;
+    document.querySelectorAll('[data-cand]').forEach(el=>{
+      el.onclick = ()=>{
+        const r = res.results[parseInt(el.dataset.cand)];
+        if(r.isArea){
+          document.getElementById('islandInput').value = r.name;
+          if(r.region) document.getElementById('regionInput').value = r.region;
+          document.getElementById('placeNameInput').value = '';
+          document.getElementById('candidateResults').innerHTML = `<div class="note" style="margin-top:10px;">Island/Area set to "${r.name}". Now type a place — e.g. "museum" or "beach taverna" — and search again.</div>`;
+        } else {
+          if(r.city) document.getElementById('cityInput').value = r.city;
+          if(r.island) document.getElementById('islandInput').value = r.island;
+          if(r.region) document.getElementById('regionInput').value = r.region;
+          document.getElementById('placeNameInput').value = r.name;
+          runDetailedSearch(r.name, r.type);
+        }
+      };
+    });
+  }catch(e){
+    statusEl.innerHTML = '';
+    candEl.innerHTML = renderSearchUnavailableCard();
+    wireUnavailableCard(()=>runCandidateSearch(), {name:f.name});
+    friendlySearchError(e);
+  }
+}
+
+function renderSearchResult(res, fallbackName, type, city, region, island){
+  const place = res.place || {name:fallbackName, type};
+  return `
+  <div class="card" style="background:var(--paper-dim);margin-top:14px;">
+    <div class="rowtop" style="display:flex;justify-content:space-between;">
+      <div>
+        <strong>${place.name}</strong> <span class="pill">${place.type||type}</span>
+        <div class="item-meta">${[place.address, place.island||island, city, region].filter(Boolean).join(' · ')}</div>
+        <div style="margin-top:6px;">
+          ${sourcePill(res.sourceQuality)}
+          <a class="srclink" href="${res.sourceUrl}" target="_blank" rel="noopener">${res.sourceName||'Source'}</a>
+          <span class="note"> · verified ${res.verifiedDate}</span>
+        </div>
+      </div>
+      <button class="btn brass sm" id="addAllFoundBtn">Add all to trip</button>
+    </div>
+    <div style="margin-top:12px;">
+      ${(res.items||[]).map((it,idx)=>`
+        <div class="item-row">
+          <div>
+            <div>${it.name} <span class="note" style="text-transform:capitalize;">(${it.category})</span></div>
+            <div class="item-meta">${it.priceType==='range' ? money(it.minPrice,it.currency)+'–'+money(it.maxPrice,it.currency) : money(it.price,it.currency)}</div>
+          </div>
+          <button class="btn ghost sm" data-addfound="${idx}">Add</button>
+        </div>
+      `).join('') || '<div class="note">No individual priced items returned.</div>'}
+    </div>
+  </div>`;
+}
+function wireSearchResult(res, type, city, region, island){
+  const country = findCountry(uiDestCountry);
+  function addFoundItem(idx){
+    const it = res.items[idx];
+    if(!it) return;
+    let place = country.places.find(p=>p.name===res.place.name && p.city===city && p.island===(res.place.island||island||''));
+    if(!place){
+      place = {
+        id: uid(), name: res.place.name, type: res.place.type||type, city, region,
+        island: res.place.island || island || '',
+        currency: it.currency || res.place.matchedCurrency || country.currency,
+        sourceName: res.sourceName, sourceUrl: res.sourceUrl, sourceQuality: res.sourceQuality,
+        verifiedDate: res.verifiedDate, items: []
+      };
+      country.places.push(place);
+    }
+    place.items.push({
+      id: uid(), name: it.name, category: it.category, priceType: it.priceType,
+      price: it.price, minPrice: it.minPrice, maxPrice: it.maxPrice,
+      currency: it.currency || place.currency, qty: 1,
+      sourceName: res.sourceName, sourceUrl: res.sourceUrl, sourceQuality: res.sourceQuality, verifiedDate: res.verifiedDate
+    });
+  }
+  document.querySelectorAll('[data-addfound]').forEach(el=>{
+    el.onclick = ()=>{ addFoundItem(parseInt(el.dataset.addfound)); render(); };
+  });
+  const addAll = document.getElementById('addAllFoundBtn');
+  if(addAll) addAll.onclick = ()=>{ (res.items||[]).forEach((_,i)=>addFoundItem(i)); render(); };
+}
+
+function renderManualForm(prefill){
+  const el = document.getElementById('manualForm');
+  const country = findCountry(uiDestCountry);
+  const pf = prefill || {};
+  el.style.display='block';
+  el.innerHTML = `
+    <h3 style="font-size:15px;margin-bottom:12px;">Add manually with a source you already have</h3>
+    <div class="note" style="margin-bottom:12px;">Use this only for a real place/price you've personally verified. You must supply a source link and the date you checked it — Waypoint will label it "User supplied source" rather than treating it as independently verified. It's still included in your final calculation.</div>
+    <div class="grid3">
+      <div class="field"><label>Place name</label><input type="text" id="mPlaceName" value="${pf.name||''}"></div>
+      <div class="field"><label>Place type</label><input type="text" id="mPlaceType" placeholder="e.g. Restaurant" value="${pf.type||''}"></div>
+      <div class="field"><label>Island / Area (optional)</label><input type="text" id="mIsland" value="${pf.island||''}"></div>
+    </div>
+    <div class="grid3" style="margin-top:12px;">
+      <div class="field"><label>City / Area (optional)</label><input type="text" id="mCity" value="${pf.city||''}"></div>
+      <div class="field"><label>Item name</label><input type="text" id="mItemName" placeholder="e.g. Adult Ticket"></div>
+      <div class="field"><label>Category</label>
+        <select id="mCategory">${['ticket','food','drink','souvenir','activity','merchandise','other'].map(c=>`<option>${c}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="grid3" style="margin-top:12px;">
+      <div class="field"><label>Currency</label>
+        <select id="mCurrency">${CURRENCIES.map(c=>`<option value="${c.code}" ${c.code===country.currency?'selected':''}>${c.code}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Price type</label>
+        <select id="mPriceType"><option value="exact">Exact</option><option value="range">Range</option></select>
+      </div>
+      <div class="field" id="mExactWrap"><label>Price</label><input type="number" id="mPrice" step="0.01"></div>
+    </div>
+    <div class="field" id="mRangeWrap" style="display:none;margin-top:12px;max-width:260px;"><label>Min – Max</label>
+      <div style="display:flex;gap:6px;"><input type="number" id="mMin" step="0.01"><input type="number" id="mMax" step="0.01"></div>
+    </div>
+    <div class="grid2" style="margin-top:12px;">
+      <div class="field"><label>Source URL</label><input type="url" id="mUrl" placeholder="https://…"></div>
+      <div class="field"><label>Date verified</label><input type="date" id="mDate" value="${fmtDate(TODAY)}"></div>
+    </div>
+    <div class="field" style="margin-top:12px;"><label>Notes (optional)</label><input type="text" id="mNotes" placeholder="Anything worth remembering about this price"></div>
+    <div style="margin-top:14px;"><button class="btn brass" id="mSaveBtn">Add to trip</button> <button class="btn ghost" id="mCancelBtn">Cancel</button></div>
+  `;
+  document.getElementById('mPriceType').onchange = e=>{
+    document.getElementById('mExactWrap').style.display = e.target.value==='exact'?'block':'none';
+    document.getElementById('mRangeWrap').style.display = e.target.value==='range'?'block':'none';
+  };
+  document.getElementById('mCancelBtn').onclick = ()=>{ el.style.display='none'; el.innerHTML=''; };
+  document.getElementById('mSaveBtn').onclick = ()=>{
+    const pname = document.getElementById('mPlaceName').value.trim();
+    const iname = document.getElementById('mItemName').value.trim();
+    const url = document.getElementById('mUrl').value.trim();
+    const date = document.getElementById('mDate').value;
+    if(!pname || !iname || !url || !date){ alert('Place name, item name, source URL and date are required.'); return; }
+    const ptype = document.getElementById('mPlaceType').value || 'Place';
+    const cityVal = document.getElementById('mCity').value.trim();
+    const islandVal = document.getElementById('mIsland').value.trim();
+    let place = country.places.find(p=>p.name===pname && p.city===cityVal && p.island===islandVal);
+    if(!place){
+      place = {id:uid(), name:pname, type:ptype, city:cityVal, region:'', island:islandVal,
+        currency: document.getElementById('mCurrency').value, sourceName:'User supplied source', sourceUrl:url,
+        sourceQuality:'Manual', verifiedDate:date, items:[]};
+      country.places.push(place);
+    }
+    const priceType = document.getElementById('mPriceType').value;
+    place.items.push({
+      id:uid(), name:iname, category:document.getElementById('mCategory').value, priceType,
+      price: priceType==='exact'? parseFloat(document.getElementById('mPrice').value)||0 : null,
+      minPrice: priceType==='range'? parseFloat(document.getElementById('mMin').value)||0 : null,
+      maxPrice: priceType==='range'? parseFloat(document.getElementById('mMax').value)||0 : null,
+      currency: document.getElementById('mCurrency').value, qty:1,
+      sourceName:'User supplied source', sourceUrl:url, sourceQuality:'Manual', verifiedDate:date,
+      notes: document.getElementById('mNotes').value.trim()
+    });
+    el.style.display='none'; el.innerHTML='';
+    render();
+  };
+}
+
+/* ============================= TAB: MY SELECTIONS ============================= */
+function renderSelections(){
+  if(!allItemsFlat().length){
+    return `<div class="empty"><h3>Nothing in your trip yet</h3><p>Add places and items from the Destinations &amp; Places tab.</p></div>`;
+  }
+  return `
+  <div class="section-title"><h2>My Selections</h2></div>
+  <div class="section-sub">Everything you've added, grouped by country and place, in each destination's own local currency.</div>
+  ${state.countries.filter(c=>c.places.length).map(c=>{
+    const t = countryTotals(c);
+    const totalStr = t.hasRange ? `${money(t.min,c.currency)} – ${money(t.max,c.currency)}` : money(t.min,c.currency);
+    return `
+    <div class="country-block">
+      <div class="country-head"><h3>${c.name}</h3><span class="amt">${totalStr}</span></div>
+      ${c.places.map(p=>renderPlaceCard(c,p)).join('')}
+    </div>`;
+  }).join('')}
+  `;
+}
+function wireSelections(){
+  // reuse destination-tab wiring logic but scoped across all countries
+  document.querySelectorAll('[data-rmplace]').forEach(el=>{
+    el.onclick=()=>{
+      state.countries.forEach(c=>{ c.places = c.places.filter(p=>p.id!==el.dataset.rmplace); });
+      render();
+    };
+  });
+  document.querySelectorAll('[data-rmitem]').forEach(el=>{
+    el.onclick=()=>{
+      const [pid,iid] = el.dataset.rmitem.split('|');
+      state.countries.forEach(c=>{
+        const p = c.places.find(x=>x.id===pid);
+        if(p) p.items = p.items.filter(i=>i.id!==iid);
+      });
+      render();
+    };
+  });
+  document.querySelectorAll('[data-qty]').forEach(el=>{
+    el.onchange=()=>{
+      const [pid,iid] = el.dataset.qty.split('|');
+      state.countries.forEach(c=>{
+        const p = c.places.find(x=>x.id===pid);
+        if(p){ const it = p.items.find(i=>i.id===iid); if(it) it.qty = Math.max(1,parseInt(el.value)||1); }
+      });
+      render();
+    };
+  });
+}
+
+/* ============================= TAB: MONEY NEEDED ============================= */
+let moneyResult = null; // {perCountry:[{iso2,min,max,rate,...}], grandMin, grandMax, hasRange, byCatHome, loading, error}
+
+function renderMoney(){
+  if(!allItemsFlat().length){
+    return `<div class="empty"><h3>Nothing to total yet</h3><p>Add places and items first, then come back to calculate your final cost.</p></div>`;
+  }
+  return `
+  <div class="section-title"><h2>Money Needed</h2></div>
+  <div class="section-sub">Converts every country's local-currency subtotal into ${state.homeCurrency||'your home currency'} using a live, sourced exchange rate.</div>
+  <button class="btn stamp" id="finalCostBtn" style="margin-bottom:20px;">FINAL COST</button>
+  <div id="moneyOutput"></div>
+  `;
+}
+function wireMoney(){
+  const out = document.getElementById('moneyOutput');
+  if(!out) return; // empty-state view has no Money Needed controls yet
+  if(moneyResult) out.innerHTML = renderMoneyResult(moneyResult);
+  on('finalCostBtn','click', async ()=>{
+    if(!state.homeCurrency){ alert('Set a home currency first.'); return; }
+    out.innerHTML = `<div class="loading-line"><div class="spinner"></div> Fetching current exchange rates and converting…</div>`;
+    const per = [];
+    let grandMin=0, grandMax=0, hasRange=false, error=null;
+    const byCatHome = {};
+    for(const c of state.countries){
+      if(!c.places.length) continue;
+      const t = countryTotals(c);
+      let rateInfo;
+      try{ rateInfo = await aiGetRate(c.currency, state.homeCurrency); }catch(e){ rateInfo=null; }
+      if(!rateInfo){ error = `Could not fetch a verified exchange rate for ${c.currency} → ${state.homeCurrency}.`; continue; }
+      const min = t.min*rateInfo.rate, max = t.max*rateInfo.rate;
+      grandMin+=min; grandMax+=max; if(t.hasRange) hasRange=true;
+      Object.keys(t.byCat).forEach(cat=>{
+        byCatHome[cat] = byCatHome[cat]||{min:0,max:0};
+        byCatHome[cat].min += t.byCat[cat].min*rateInfo.rate;
+        byCatHome[cat].max += t.byCat[cat].max*rateInfo.rate;
+      });
+      per.push({iso2:c.iso2, name:c.name, currency:c.currency, localMin:t.min, localMax:t.max, hasRange:t.hasRange, rateInfo, homeMin:min, homeMax:max});
+    }
+    moneyResult = {per, grandMin, grandMax, hasRange, byCatHome, error};
+    out.innerHTML = renderMoneyResult(moneyResult);
+  });
+}
+function renderMoneyResult(r){
+  const totalStr = r.hasRange ? `${money(r.grandMin,state.homeCurrency)} – ${money(r.grandMax,state.homeCurrency)}` : money(r.grandMin,state.homeCurrency);
+  const catLabels = {ticket:'Tickets',food:'Food & Drinks',drink:'Food & Drinks',souvenir:'Souvenirs',merchandise:'Souvenirs / Merchandise',activity:'Activities',other:'Other Purchases'};
+  const merged = {};
+  Object.keys(r.byCatHome||{}).forEach(cat=>{
+    const label = catLabels[cat]||'Other Purchases';
+    merged[label] = merged[label]||{min:0,max:0};
+    merged[label].min += r.byCatHome[cat].min; merged[label].max += r.byCatHome[cat].max;
+  });
+  return `
+    ${r.error? `<div class="warn-banner">${r.error} That country's total is excluded until a rate can be verified — try again.</div>`:''}
+    <div class="boardingpass">
+      <div class="bp-punch top"></div><div class="bp-punch bot"></div>
+      <div class="bp-main">
+        <div class="lbl">Money Needed · ${state.homeCurrency}</div>
+        <div class="${r.hasRange?'bp-range':'bp-total'}">${totalStr}</div>
+        <div class="bp-sub">${r.hasRange? 'Estimated Cost Range — some selected items are priced as ranges by their sources.' : 'Exact Estimated Total — every selected item has a single verified price.'}</div>
+      </div>
+      <div class="bp-stub">
+        <div class="lbl">Countries</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;margin-top:8px;line-height:1.9;">
+          ${r.per.map(p=>`${p.name}`).join('<br>')}
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-total-grid">
+      ${Object.keys(merged).map(label=>{
+        const m = merged[label];
+        const str = (m.max-m.min>0.005) ? `${money(m.min,state.homeCurrency)}–${money(m.max,state.homeCurrency)}` : money(m.min,state.homeCurrency);
+        return `<div class="cat-total"><div class="lbl">${label}</div><div class="amt">${str}</div></div>`;
+      }).join('')}
+    </div>
+
+    <h3 style="font-size:15px;margin:24px 0 10px;">Country breakdown</h3>
+    <table class="srctable">
+      <tr><th>Country</th><th>Local subtotal</th><th>Rate used</th><th>In ${state.homeCurrency}</th><th>Rate source</th></tr>
+      ${r.per.map(p=>`
+        <tr>
+          <td>${p.name}</td>
+          <td class="mono">${p.hasRange? money(p.localMin,p.currency)+'–'+money(p.localMax,p.currency) : money(p.localMin,p.currency)}</td>
+          <td class="mono">1 ${p.currency} = ${p.rateInfo.rate.toFixed(4)} ${state.homeCurrency}</td>
+          <td class="mono">${(p.homeMax-p.homeMin>0.01)? money(p.homeMin,state.homeCurrency)+'–'+money(p.homeMax,state.homeCurrency) : money(p.homeMin,state.homeCurrency)}</td>
+          <td>${p.rateInfo.sourceUrl? `<a class="srclink" href="${p.rateInfo.sourceUrl}" target="_blank" rel="noopener">${p.rateInfo.sourceName}</a>`: (p.rateInfo.sourceName||'—')}<div class="note">${p.rateInfo.date||''}</div></td>
+        </tr>
+      `).join('')}
+    </table>
+    <div class="note" style="margin-top:10px;">Estimated currency conversion — the actual rate your bank or card issuer applies may differ.</div>
+  `;
+}
+
+/* ============================= TAB: SOURCES ============================= */
+function renderSources(){
+  const rows = allItemsFlat();
+  if(!rows.length) return `<div class="empty"><h3>No sourced items yet</h3></div>`;
+  return `
+  <div class="section-title"><h2>Sources</h2></div>
+  <div class="section-sub">Every priced item in your trip, with where it came from and when it was checked.</div>
+  <table class="srctable">
+    <tr><th>Item</th><th>Place</th><th>Country</th><th>Price</th><th>Quality</th><th>Source</th><th>Verified</th></tr>
+    ${rows.map(({country,place,item})=>{
+      const priceStr = item.priceType==='range' ? `${money(item.minPrice,item.currency)}–${money(item.maxPrice,item.currency)}` : money(item.price,item.currency);
+      const stale = daysSince(item.verifiedDate) > 30;
+      return `<tr>
+        <td>${item.name}</td>
+        <td>${place.name}</td>
+        <td>${country.name}</td>
+        <td class="mono">${priceStr}</td>
+        <td>${sourcePill(item.sourceQuality)}</td>
+        <td>${item.sourceUrl? `<a class="srclink" href="${item.sourceUrl}" target="_blank" rel="noopener">${item.sourceName||'Link'}</a>`:(item.sourceName||'—')}</td>
+        <td>${item.verifiedDate}${stale?'<br><span class="pill stale">may have changed</span>':''}</td>
+      </tr>`;
+    }).join('')}
+  </table>`;
+}
+
+render();
+</script>
+</body>
+</html>
