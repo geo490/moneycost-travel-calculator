@@ -1,0 +1,6 @@
+# Explicit functions directory declaration. Netlify's CLI/build system auto-detects
+# netlify/functions by default, but declaring it here removes any ambiguity about
+# where to find search.js and fxrate.js when deploying.
+[build]
+  functions = "netlify/functions"
+  publish = "."
